@@ -1,0 +1,28 @@
+framework:
+    test: true
+
+services:
+    _defaults:
+        autoconfigure: true
+        autowire: true
+
+    CheckItOut\Tests\:
+        resource: '../../../tests/src'
+
+    CheckItOut\Exercise\BookStore\Infrastructure\Repository\FileStorageRepository:
+        public: true
+        arguments:
+            - '%books_store%'
+
+    CheckItOut\Exercise\CustomCron\Infrastructure\Repository\LineReaderCronJobRepository:
+        public: true
+
+    CheckItOut\Exercise\CustomCron\Infrastructure\Dispatcher\RabbitMq\RabbitMqCronJobDispatcher:
+        public: true
+
+    CheckItOut\Exercise\CustomCron\Infrastructure\Dispatcher\RabbitMq\RabbitMqCronJobConsumer:
+        public: true
+        arguments:
+            - '@CheckItOut\Shared\Infrastructure\RabbitMq\RabbitMqConnection'
+            - '%env(RABBITMQ_EXCHANGE)%'
+            - '%env(RABBITMQ_MAX_RETRIES)%'

@@ -1,0 +1,2 @@
+imports:
+  - tests/apps/exercise/features/exercise.yml

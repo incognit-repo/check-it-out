@@ -1,0 +1,21 @@
+exercise:
+  extensions:
+    FriendsOfBehat\SymfonyExtension:
+      kernel:
+        class: CheckItOut\Apps\Exercise\Kernel
+      bootstrap: apps/bootstrap.php
+    Behat\MinkExtension:
+      sessions:
+        symfony:
+          symfony: ~
+      base_url: ''
+
+  suites:
+    health_check:
+      paths: [ tests/apps/exercise/features/health_check ]
+      contexts:
+        - CheckItOut\Tests\Shared\Infrastructure\Behat\ApiContext
+    book_store:
+      paths: [ tests/apps/exercise/features/book_store ]
+      contexts:
+        - CheckItOut\Tests\Exercise\BookStore\Infrastructure\Behat\BookContext

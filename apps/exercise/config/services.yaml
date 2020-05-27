@@ -1,0 +1,91 @@
+parameters:
+    books_store: '%env(BOOKS_STORE_FILEPATH)%'
+    cron_file_path: '%env(CRON_FILE_PATH)%'
+    supervisord_file_path: '%env(SUPERVISORD_FILE_PATH)%'
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    CheckItOut\Apps\Exercise\Controller\:
+        resource: '../src/Controller'
+        tags: ['controller.service_arguments']
+
+    CheckItOut\Apps\Exercise\Command\:
+        resource: '../src/Command'
+        tags: ['console.command']
+
+    CheckItOut\Exercise\:
+        resource: '../../../src/Exercise'
+
+    CheckItOut\Shared\:
+        resource: '../../../src/Shared'
+
+
+    query_handlers:
+        namespace: 'CheckItOut\Exercise\'
+        resource: '../../../src/Exercise/*/Application/*/*QueryHandler.php'
+        autoconfigure: false
+        tags:
+            - { name: messenger.message_handler, bus: sync.bus }
+
+    command_handlers:
+        namespace: 'CheckItOut\Exercise\'
+        resource: '../../../src/Exercise/*/Application/*/*CommandHandler.php'
+        autoconfigure: false
+        tags:
+            - { name: messenger.message_handler, bus: sync.bus }
+
+
+    CheckItOut\Shared\Infrastructure\Symfony\AddJsonBodyToRequestListener:
+        tags:
+            - { name: kernel.event_listener, event: kernel.request, method: onKernelRequest }
+
+
+    CheckItOut\Exercise\Shared\Infrastructure\RabbitMq\RabbitMqExchange:
+        arguments:
+            - '%env(RABBITMQ_EXCHANGE)%'
+
+
+    CheckItOut\Shared\Infrastructure\RabbitMq\RabbitMqConnection:
+        arguments:
+            - host: '%env(RABBITMQ_HOST)%'
+              port: '%env(RABBITMQ_PORT)%'
+              vhost: '%env(RABBITMQ_VHOST)%'
+              login: '%env(RABBITMQ_LOGIN)%'
+              password: '%env(RABBITMQ_PASSWORD)%'
+              read_timeout: 2
+              write_timeout: 2
+              connect_timeout: 5
+
+    CheckItOut\Shared\Domain\Bus\Query\QueryBus: '@CheckItOut\Shared\Infrastructure\Bus\Query\SyncSymfonyQueryBus'
+    CheckItOut\Shared\Domain\Bus\Command\CommandBus: '@CheckItOut\Shared\Infrastructure\Bus\Command\SyncSymfonyCommandBus'
+    CheckItOut\Shared\Domain\Bus\Event\EventBus: '@CheckItOut\Shared\Infrastructure\Bus\Event\SyncSymfonyEventBus'
+    CheckItOut\Exercise\CustomCron\Domain\CronJobDispatcher: '@CheckItOut\Exercise\CustomCron\Infrastructure\Dispatcher\RabbitMq\RabbitMqCronJobDispatcher'
+
+    CheckItOut\Exercise\BookStore\Infrastructure\Repository\FileStorageRepository:
+        arguments:
+            - '%books_store%'
+
+
+    CheckItOut\Exercise\CustomCron\Application\Dispatch\DispatchReadyCronJobsCommandHandler:
+        autoconfigure: false
+        autowire: false
+        arguments:
+            - '@CheckItOut\Exercise\CustomCron\Infrastructure\Repository\LineReaderCronJobRepository'
+            - '%cron_file_path%'
+            - '@CheckItOut\Exercise\CustomCron\Infrastructure\Dispatcher\RabbitMq\RabbitMqCronJobDispatcher'
+
+        tags:
+            - { name: messenger.message_handler, bus: sync.bus }
+
+    CheckItOut\Exercise\CustomCron\Infrastructure\Dispatcher\RabbitMq\RabbitMqGenerateSupervisord:
+        arguments:
+            - '%supervisord_file_path%'
+
+    CheckItOut\Exercise\CustomCron\Infrastructure\Dispatcher\RabbitMq\RabbitMqCronJobConsumer:
+        arguments:
+            - '@CheckItOut\Shared\Infrastructure\RabbitMq\RabbitMqConnection'
+            - '%env(RABBITMQ_EXCHANGE)%'
+            - '%env(RABBITMQ_MAX_RETRIES)%'
+

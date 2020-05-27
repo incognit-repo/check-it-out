@@ -1,0 +1,9 @@
+book_get:
+  path: /books/{id}
+  controller: CheckItOut\Apps\Exercise\Controller\BookStore\BookGetController
+  methods:  [GET]
+
+book_put:
+  path: /books/{id}
+  controller: CheckItOut\Apps\Exercise\Controller\BookStore\BookPutController
+  methods:  [PUT]
